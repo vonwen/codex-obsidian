@@ -92,10 +92,6 @@ npm test
 - 图片中的远程 URL 可能向图片服务器发出网络请求。
 - 保存操作会直接修改原 Markdown 文件，建议对 Vault 使用 Git、Time Machine 或其他备份。
 
-## 公众号文章
-
-完整的使用场景和设计思路见 [docs/公众号文章.md](docs/公众号文章.md)。
-
 ## License
 
 [MIT](LICENSE)
