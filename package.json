@@ -1,0 +1,20 @@
+{
+  "name": "codex-obsidian",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "Browse, search, preview and edit an Obsidian Markdown vault from a local web app inside Codex.",
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check lib/vault.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "marked": "^17.0.1",
+    "sanitize-html": "^2.17.0"
+  },
+  "license": "MIT"
+}

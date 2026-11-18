@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Codex Obsidian</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f6f5;
+        --panel: #ffffff;
+        --panel-2: #eef1ef;
+        --text: #18201d;
+        --muted: #68716d;
+        --border: #d8ddda;
+        --accent: #286a56;
+        --accent-soft: #dcebe5;
+        --danger: #b43b3b;
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #171a18;
+          --panel: #202421;
+          --panel-2: #292e2b;
+          --text: #edf1ee;
+          --muted: #aab2ad;
+          --border: #3a413d;
+          --accent: #76c7a9;
+          --accent-soft: #263e35;
+          --danger: #ff8b8b;
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-width: 320px; min-height: 620px; background: var(--bg); color: var(--text); }
+      button, input, textarea { font: inherit; color: inherit; }
+      button { cursor: pointer; }
+      button:disabled { cursor: default; opacity: .55; }
+      .app { min-height: 620px; display: grid; grid-template-rows: auto 1fr; }
+      .topbar { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
+      .brand { min-width: max-content; font-weight: 600; }
+      .count { color: var(--muted); font-size: 12px; }
+      .search { flex: 1; min-width: 120px; border: 1px solid var(--border); background: var(--bg); border-radius: 6px; padding: 8px 10px; outline: none; }
+      .search:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+      .workspace { min-height: 0; display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); }
+      .sidebar { min-height: 0; border-right: 1px solid var(--border); background: var(--panel); overflow: auto; padding: 8px 6px 20px; }
+      .tree, .tree ul, .results { list-style: none; padding: 0; margin: 0; }
+      .tree ul { padding-left: 17px; }
+      .tree-row, .result-row { width: 100%; display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 4px; align-items: center; border: 0; border-radius: 4px; background: transparent; padding: 5px 6px; text-align: left; }
+      .tree-row:hover, .result-row:hover { background: var(--panel-2); }
+      .tree-row.active, .result-row.active { background: var(--accent-soft); color: var(--accent); }
+      .chevron { width: 16px; color: var(--muted); text-align: center; transition: transform .12s ease; }
+      .expanded > .tree-row .chevron { transform: rotate(90deg); }
+      .file-mark { color: var(--muted); text-align: center; }
+      .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .result-row { display: block; padding: 8px; }
+      .result-name { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .result-path, .excerpt { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .content { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto 1fr auto; background: var(--bg); }
+      .toolbar { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
+      .path { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+      .segmented button, .save { border: 0; background: transparent; padding: 7px 10px; }
+      .segmented button + button { border-left: 1px solid var(--border); }
+      .segmented button.active { background: var(--text); color: var(--panel); }
+      .save { border-radius: 6px; background: var(--accent); color: #fff; font-weight: 500; }
+      .document { min-height: 0; overflow: auto; padding: 24px clamp(16px, 4vw, 56px) 64px; }
+      .empty { height: 100%; display: grid; place-items: center; color: var(--muted); }
+      .markdown { max-width: 860px; margin: 0 auto; line-height: 1.65; overflow-wrap: anywhere; }
+      .markdown h1, .markdown h2, .markdown h3 { line-height: 1.28; margin: 1.5em 0 .55em; }
+      .markdown h1 { margin-top: 0; font-size: 28px; }
+      .markdown h2 { font-size: 22px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+      .markdown h3 { font-size: 18px; }
+      .markdown p, .markdown ul, .markdown ol, .markdown pre, .markdown blockquote, .markdown table { margin: 0 0 1em; }
+      .markdown a { color: var(--accent); }
+      .markdown pre { overflow: auto; background: var(--panel-2); padding: 12px; border-radius: 6px; }
+      .markdown code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .markdown :not(pre) > code { background: var(--panel-2); padding: 2px 4px; border-radius: 3px; }
+      .markdown blockquote { border-left: 3px solid var(--accent); margin-left: 0; padding-left: 14px; color: var(--muted); }
+      .markdown table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
+      .markdown th, .markdown td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; }
+      .editor { width: min(100%, 980px); min-height: 100%; margin: 0 auto; resize: none; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); padding: 16px; font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; outline: none; }
+      .status { min-height: 31px; padding: 7px 12px; border-top: 1px solid var(--border); background: var(--panel); color: var(--muted); font-size: 12px; }
+      .status.error { color: var(--danger); }
+      [hidden] { display: none !important; }
+      @media (max-width: 720px) {
+        .topbar { flex-wrap: wrap; }
+        .brand { flex: 1; }
+        .search { flex-basis: 100%; }
+        .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(180px, 34vh) minmax(420px, 1fr); }
+        .sidebar { border-right: 0; border-bottom: 1px solid var(--border); }
+        .toolbar { flex-wrap: wrap; }
+        .path { flex-basis: 100%; order: -1; }
+        .document { padding: 18px 14px 48px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <span class="brand">Codex Obsidian</span>
+        <span class="count" id="note-count"></span>
+        <input class="search" id="search" type="search" placeholder="搜索标题、路径和内容" aria-label="搜索笔记" />
+      </header>
+      <div class="workspace">
+        <nav class="sidebar" aria-label="笔记目录">
+          <ul class="tree" id="tree"></ul>
+          <ul class="results" id="results" hidden></ul>
+        </nav>
+        <section class="content">
+          <div class="toolbar">
+            <span class="path" id="path">选择一篇笔记</span>
+            <div class="segmented" role="group" aria-label="查看模式">
+              <button id="preview-button" type="button" class="active" aria-pressed="true">预览</button>
+              <button id="edit-button" type="button" aria-pressed="false">编辑</button>
+            </div>
+            <button class="save" id="save-button" type="button" disabled>保存</button>
+          </div>
+          <div class="document">
+            <div class="empty" id="empty">选择一篇笔记</div>
+            <article class="markdown" id="preview" hidden></article>
+            <textarea class="editor" id="editor" aria-label="Markdown 编辑器" spellcheck="false" hidden></textarea>
+          </div>
+          <div class="status" id="status" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+    <script type="module">
+      const els = {
+        tree: document.querySelector("#tree"),
+        results: document.querySelector("#results"),
+        search: document.querySelector("#search"),
+        count: document.querySelector("#note-count"),
+        path: document.querySelector("#path"),
+        empty: document.querySelector("#empty"),
+        preview: document.querySelector("#preview"),
+        editor: document.querySelector("#editor"),
+        previewButton: document.querySelector("#preview-button"),
+        editButton: document.querySelector("#edit-button"),
+        saveButton: document.querySelector("#save-button"),
+        status: document.querySelector("#status"),
+      };
+
+      let allNotes = [];
+      let currentNote = null;
+      let mode = "preview";
+      let searchTimer = null;
+
+      async function callTool(name, args = {}) {
+        let url;
+        let options;
+        if (name === "list_notes") url = "/api/tree";
+        if (name === "read_note") url = `/api/note?path=${encodeURIComponent(args.path)}`;
+        if (name === "search_notes") url = `/api/search?q=${encodeURIComponent(args.query)}&limit=${args.limit || 80}`;
+        if (name === "save_note") {
+          url = "/api/note";
+          options = {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(args),
+          };
+        }
+        if (!url) throw new Error("不支持的操作。");
+        const response = await fetch(url, options);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "请求失败。");
+        return { structuredContent: result };
+      }
+
+      function setStatus(message = "", error = false) {
+        els.status.textContent = message;
+        els.status.classList.toggle("error", error);
+      }
+
+      function flattenNotes(entries) {
+        for (const entry of entries) {
+          if (entry.type === "directory") flattenNotes(entry.children);
+          else allNotes.push(entry);
+        }
+      }
+
+      function noteButton(entry) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "tree-row";
+        button.dataset.path = entry.path;
+        button.innerHTML = `<span class="file-mark">·</span><span class="label"></span>`;
+        button.querySelector(".label").textContent = entry.name.replace(/\.md$/i, "");
+        button.addEventListener("click", () => openNote(entry.path));
+        return button;
+      }
+
+      function renderTree(entries, parent) {
+        for (const entry of entries) {
+          const li = document.createElement("li");
+          if (entry.type === "directory") {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "tree-row";
+            button.innerHTML = `<span class="chevron">›</span><span class="label"></span>`;
+            button.querySelector(".label").textContent = entry.name;
+            const children = document.createElement("ul");
+            children.hidden = true;
+            button.addEventListener("click", () => {
+              const expanded = li.classList.toggle("expanded");
+              children.hidden = !expanded;
+            });
+            li.append(button, children);
+            renderTree(entry.children, children);
+          } else {
+            li.appendChild(noteButton(entry));
+          }
+          parent.appendChild(li);
+        }
+      }
+
+      function setActivePath(notePath) {
+        document.querySelectorAll("[data-path]").forEach((element) => {
+          element.classList.toggle("active", element.dataset.path === notePath);
+        });
+      }
+
+      function setMode(nextMode) {
+        mode = nextMode;
+        const previewing = mode === "preview";
+        els.previewButton.classList.toggle("active", previewing);
+        els.editButton.classList.toggle("active", !previewing);
+        els.previewButton.setAttribute("aria-pressed", String(previewing));
+        els.editButton.setAttribute("aria-pressed", String(!previewing));
+        els.preview.hidden = !previewing || !currentNote;
+        els.editor.hidden = previewing || !currentNote;
+        els.empty.hidden = Boolean(currentNote);
+      }
+
+      async function openNote(notePath) {
+        if (currentNote && els.editor.value !== currentNote.content && !confirm("当前修改尚未保存，仍要打开其他笔记吗？")) return;
+        setStatus("正在打开…");
+        try {
+          const response = await callTool("read_note", { path: notePath });
+          currentNote = response.structuredContent.note;
+          els.path.textContent = currentNote.path;
+          els.preview.innerHTML = currentNote.html;
+          els.editor.value = currentNote.content;
+          els.saveButton.disabled = true;
+          setActivePath(currentNote.path);
+          setMode(mode);
+          setStatus(`${Math.max(1, Math.round(currentNote.size / 1024))} KB`);
+        } catch (error) {
+          setStatus(error?.message || "无法打开笔记", true);
+        }
+      }
+
+      function resolveWikiLink(target) {
+        const decoded = decodeURIComponent(target).replace(/\.md$/i, "");
+        return allNotes.find((note) => note.path.replace(/\.md$/i, "") === decoded)
+          || allNotes.find((note) => note.name.replace(/\.md$/i, "") === decoded);
+      }
+
+      els.preview.addEventListener("click", (event) => {
+        const link = event.target.closest("a");
+        if (!link) return;
+        const href = link.getAttribute("href") || "";
+        if (href.startsWith("#vault-note=")) {
+          event.preventDefault();
+          const note = resolveWikiLink(href.slice("#vault-note=".length));
+          note ? openNote(note.path) : setStatus("未找到链接目标", true);
+          return;
+        }
+        if (href.toLowerCase().includes(".md")) {
+          event.preventDefault();
+          const base = currentNote?.path.split("/").slice(0, -1).join("/") || "";
+          const candidate = decodeURIComponent(href.split("#")[0]).replace(/^\.\//, "");
+          const combined = base ? `${base}/${candidate}` : candidate;
+          const note = allNotes.find((item) => item.path === combined) || allNotes.find((item) => item.path === candidate);
+          note ? openNote(note.path) : setStatus("未找到链接目标", true);
+        }
+      });
+
+      els.previewButton.addEventListener("click", () => setMode("preview"));
+      els.editButton.addEventListener("click", () => setMode("edit"));
+      els.editor.addEventListener("input", () => {
+        els.saveButton.disabled = !currentNote || els.editor.value === currentNote.content;
+        setStatus(els.saveButton.disabled ? "" : "尚未保存");
+      });
+
+      els.saveButton.addEventListener("click", async () => {
+        if (!currentNote || els.saveButton.disabled) return;
+        els.saveButton.disabled = true;
+        setStatus("正在保存…");
+        try {
+          const response = await callTool("save_note", {
+            path: currentNote.path,
+            content: els.editor.value,
+            expectedMtimeMs: currentNote.mtimeMs,
+          });
+          currentNote = response.structuredContent.note;
+          els.preview.innerHTML = currentNote.html;
+          els.editor.value = currentNote.content;
+          setStatus("已保存");
+        } catch (error) {
+          els.saveButton.disabled = false;
+          setStatus(error?.message || "保存失败", true);
+        }
+      });
+
+      function renderResults(matches) {
+        els.results.innerHTML = "";
+        for (const match of matches) {
+          const li = document.createElement("li");
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "result-row";
+          button.dataset.path = match.path;
+          const name = document.createElement("span");
+          name.className = "result-name";
+          name.textContent = match.name.replace(/\.md$/i, "");
+          const notePath = document.createElement("span");
+          notePath.className = "result-path";
+          notePath.textContent = match.path;
+          const excerpt = document.createElement("span");
+          excerpt.className = "excerpt";
+          excerpt.textContent = match.excerpt;
+          button.append(name, notePath, excerpt);
+          button.addEventListener("click", () => openNote(match.path));
+          li.appendChild(button);
+          els.results.appendChild(li);
+        }
+        setActivePath(currentNote?.path || "");
+      }
+
+      els.search.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        const query = els.search.value.trim();
+        els.tree.hidden = Boolean(query);
+        els.results.hidden = !query;
+        if (!query) {
+          els.results.innerHTML = "";
+          setStatus("");
+          return;
+        }
+        searchTimer = setTimeout(async () => {
+          setStatus("正在搜索…");
+          try {
+            const response = await callTool("search_notes", { query, limit: 80 });
+            renderResults(response.structuredContent.matches);
+            setStatus(`${response.structuredContent.matches.length} 个结果`);
+          } catch (error) {
+            setStatus(error?.message || "搜索失败", true);
+          }
+        }, 250);
+      });
+
+      async function initialize() {
+        setStatus("正在载入目录…");
+        try {
+          const response = await callTool("list_notes");
+          const { tree, noteCount } = response.structuredContent;
+          allNotes = [];
+          flattenNotes(tree);
+          renderTree(tree, els.tree);
+          els.count.textContent = `${noteCount} 篇`;
+          setStatus("");
+        } catch (error) {
+          setStatus(error?.message || "无法载入目录", true);
+        }
+      }
+
+      initialize();
+    </script>
+  </body>
+</html>
