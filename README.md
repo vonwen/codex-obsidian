@@ -4,6 +4,8 @@
 
 项目采用本地优先设计：Vault 内容不上传、不写入仓库，Web 服务默认只监听 `127.0.0.1`。
 
+![Codex Obsidian 笔记浏览器](docs/images/02-note-preview.png)
+
 ## 功能
 
 - Obsidian 风格的目录树

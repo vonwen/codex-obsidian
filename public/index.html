@@ -32,11 +32,11 @@
         }
       }
       * { box-sizing: border-box; }
-      html, body { margin: 0; min-width: 320px; min-height: 620px; background: var(--bg); color: var(--text); }
+      html, body { margin: 0; min-width: 320px; min-height: 620px; height: 100%; background: var(--bg); color: var(--text); }
       button, input, textarea { font: inherit; color: inherit; }
       button { cursor: pointer; }
       button:disabled { cursor: default; opacity: .55; }
-      .app { min-height: 620px; display: grid; grid-template-rows: auto 1fr; }
+      .app { min-height: 620px; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
       .topbar { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
       .brand { min-width: max-content; font-weight: 600; }
       .count { color: var(--muted); font-size: 12px; }
@@ -360,6 +360,15 @@
           renderTree(tree, els.tree);
           els.count.textContent = `${noteCount} 篇`;
           setStatus("");
+          const params = new URLSearchParams(window.location.search);
+          const initialQuery = params.get("q");
+          const initialNote = params.get("note");
+          if (initialQuery) {
+            els.search.value = initialQuery;
+            els.search.dispatchEvent(new Event("input"));
+          } else if (initialNote && allNotes.some((note) => note.path === initialNote)) {
+            await openNote(initialNote);
+          }
         } catch (error) {
           setStatus(error?.message || "无法载入目录", true);
         }
